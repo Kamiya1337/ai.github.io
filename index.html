@@ -2,7 +2,7 @@
 <html lang="vi">
    <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>HHAI - Dự án AI Tư Vấn Nghề Nghiệp | THPT Hàng Hải</title>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
       <style>
@@ -919,82 +919,57 @@
          right: 5%;
          bottom: 10px;
          }
-		 /* ===== CHATBOT MOBILE STYLES ===== */
-@media (max-width: 768px) {
-    .chatbot-container {
-        width: 90vw;
-        height: 70vh;
-        max-height: 80vh;
-        right: 5vw;
-        left: 5vw;
-        bottom: 10px;
-        top: auto;
-    }
-    
-    .chatbot-iframe {
-        height: calc(100% - 50px);
-    }
-    
-    .chatbot-header {
-        padding: 10px;
-    }
-    
-    .chatbot-title-text {
-        display: inline-block;
-        max-width: 70vw;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+         }
+		 /* ===== CHATBOT MOBILE FIXES ===== */
+.chatbot-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-color);
 }
 
-@media (max-width: 480px) {
-    .chatbot-container {
-        height: 60vh;
-    }
-    
-    .chatbot-title {
-        font-size: 0.9rem;
-    }
-    
-    .chatbot-close {
-        padding: 3px;
-    }
+.chatbot-content {
+    flex: 1;
+    overflow: hidden !important;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Fix for mobile browsers */
+/* Safari specific fixes */
 @supports (-webkit-touch-callout: none) {
     .chatbot-container {
-        max-height: 80vh;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
     }
 }
 
-/* Fix for Safari */
-_::-webkit-full-page-media, _:future, :root .chatbot-container {
-    height: 65vh;
+@media screen and (max-width: 767px) {
+    _::-webkit-full-page-media, _:future, :root .chatbot-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+    
+    _::-webkit-full-page-media, _:future, :root .chatbot-content {
+        height: calc(100% - 60px);
+    }
+    
+    .chatbot-error {
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .chatbot-error a {
+        color: var(--secondary-color);
+        text-decoration: underline;
+    }
 }
-
-/* Modal dự phòng */
-.chatbot-mobile-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.8);
-    z-index: 9999;
-    display: none;
-}
-
-.chatbot-mobile-container {
-    width: 100%;
-    height: 80%;
-    position: absolute;
-    bottom: 0;
-    background: var(--chatbot-bg);
-    border-radius: 15px 15px 0 0;
-}
-         }
       </style>
    </head>
    <body>
@@ -1760,24 +1735,22 @@ _::-webkit-full-page-media, _:future, :root .chatbot-container {
       </footer>
       <!-- Chatbot Container -->
       <div class="chatbot-container" id="chatbotContainer" style="display: none;">
-    <div class="chatbot-header">
-        <div class="chatbot-title">
-            <i class="fas fa-robot"></i>
-            <span class="chatbot-title-text">HHAI - Trợ lý ảo</span>
-        </div>
-        <button class="chatbot-close" onclick="closeChatbot()">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <iframe class="chatbot-iframe" id="chatbotIframe" allow="microphone" title="Chatbot HHAI"></iframe>
-</div>
-
-<!-- Modal dự phòng (tùy chọn) -->
-<div class="chatbot-mobile-modal" id="chatbotMobileModal">
-    <div class="chatbot-mobile-container">
-        <!-- Nội dung chatbot sẽ được inject bằng JS nếu cần -->
-    </div>
-</div>
+		<div class="chatbot-header">
+			<div class="chatbot-title">
+				<i class="fas fa-robot"></i>
+				<span>HHAI - Trợ lý ảo</span>
+			</div>
+			<button class="chatbot-close" onclick="closeChatbot()">
+				<i class="fas fa-times"></i>
+			</button>
+		</div>
+			<div class="chatbot-content" id="chatbotContent">
+				<div class="chatbot-loading">
+					<i class="fas fa-spinner fa-spin"></i>
+					<p>Đang tải trợ lý ảo...</p>
+				</div>
+			</div>
+		</div>
       <!-- Script để điều khiển chatbot -->
       <script>
          // Detect system color scheme changes
@@ -1826,49 +1799,50 @@ _::-webkit-full-page-media, _:future, :root .chatbot-container {
              }
          });
                  // Mở chatbot
-                 // Thay thế hàm openChatbot hiện có bằng:
-function openChatbot() {
+                 function openChatbot() {
     const container = document.getElementById('chatbotContainer');
-    const iframe = document.getElementById('chatbotIframe');
-    const modal = document.getElementById('chatbotMobileModal');
+    const content = document.getElementById('chatbotContent');
     
-    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    container.style.display = 'flex';
     
-    // Ưu tiên dùng iframe, nếu không được thì dùng modal
-    if (!isMobile || confirm("Bạn muốn mở chatbot ở chế độ toàn màn hình?")) {
-        if (isMobile) {
-            container.style.width = '90vw';
-            container.style.height = '70vh';
-            container.style.right = '5vw';
-            container.style.left = '5vw';
-            container.style.bottom = '10px';
-            container.style.top = 'auto';
-        }
-        
-        iframe.src = "https://widget.taggo.chat/?botId=67e585c3112730a18bdf3df0&mobile=" + (isMobile ? "true" : "false");
-        container.style.display = 'flex';
-        setTimeout(() => {
-            container.style.opacity = '1';
-            container.style.transform = 'translateY(0)';
-        }, 10);
+    // Kiểm tra trình duyệt Safari trên iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    if (isIOS || isSafari) {
+        content.innerHTML = `
+            <div class="safari-fallback">
+                <h3>Trợ lý ảo HHAI</h3>
+                <p>Để sử dụng đầy đủ tính năng, vui lòng:</p>
+                <ol>
+                    <li>Tắt chế độ duyệt web ẩn danh</li>
+                    <li>Cho phép cookie và JavaScript</li>
+                    <li>Nhấn vào liên kết bên dưới nếu chatbot không hiển thị</li>
+                </ol>
+                <a href="https://widget.taggo.chat/?botId=67e585c3112730a18bdf3df0" 
+                   target="_blank" 
+                   style="color: var(--secondary-color); text-decoration: underline;">
+                   Mở Chatbot trong trình duyệt mới
+                </a>
+            </div>
+        `;
     } else {
-        // Fallback dùng modal nếu cần
-        modal.style.display = 'block';
-        // Có thể load chatbot trực tiếp vào modal nếu iframe không hoạt động
+        content.innerHTML = `
+            <iframe src="https://widget.taggo.chat/?botId=67e585c3112730a18bdf3df0" 
+                    class="chatbot-iframe" 
+                    allow="microphone"
+                    sandbox="allow-scripts allow-same-origin allow-forms"
+                    style="border: none; width: 100%; height: 100%;">
+            </iframe>
+        `;
     }
+    
+    setTimeout(() => {
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+    }, 10);
 }
-
-// Thêm sự kiện resize
-window.addEventListener('resize', function() {
-    if (window.innerHeight < 500) {
-        const chatbot = document.getElementById('chatbotContainer');
-        if (chatbot.style.display === 'flex') {
-            chatbot.style.height = '40vh';
-        }
-    }
-});
-
-// Giữ nguyên các hàm khác (closeChatbot, askAI, saveCareer...)
+				 
                  
                  // Đóng chatbot
                  function closeChatbot() {
@@ -1881,6 +1855,31 @@ window.addEventListener('resize', function() {
                          iframe.src = "";
                      }, 300);
                  }
+				 
+				 async function loadChatbotDirect() {
+    try {
+        const response = await fetch('https://your-server.com/chatbot-api');
+        const data = await response.json();
+        // Xử lý hiển thị chatbot trực tiếp
+    } catch (error) {
+        document.getElementById('chatbotContent').innerHTML = `
+            <div class="chatbot-error">
+                <p>Không thể kết nối với chatbot. Vui lòng thử lại sau.</p>
+                <button onclick="retryChatbot()">Thử lại</button>
+            </div>
+        `;
+    }
+}
+
+function retryChatbot() {
+    document.getElementById('chatbotContent').innerHTML = `
+        <div class="chatbot-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang kết nối lại...</p>
+        </div>
+    `;
+    setTimeout(openChatbot, 1000);
+}
                  
                  // Tự động mở chatbot sau 15 giây
                  setTimeout(openChatbot, 15000);
